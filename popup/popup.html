@@ -58,6 +58,18 @@
     <label>Optional note (blank = send with no note — recommended for volume;
       LinkedIn limits personalized-note invites on free accounts)</label>
     <textarea id="inviteNote" rows="2" placeholder="Hi {firstName}, I’d love to connect and follow your work!"></textarea>
+
+    <label class="row"><input type="checkbox" id="inviteFilterEnabled">
+      Only invite high-value people (match roles/seniority below)</label>
+    <label>Target roles &amp; seniority — invite only if the person’s headline
+      contains one of these (comma-separated)</label>
+    <textarea id="inviteTargetKeywords" rows="3" placeholder="recruiter, talent acquisition, senior, director, vp, head of, associate…"></textarea>
+    <label>Never invite if headline contains (comma-separated)</label>
+    <input type="text" id="inviteExcludeKeywords" placeholder="intern, student">
+    <p class="note">Targeting reads each person’s headline on the page you point
+      it at. For best results, point the search URL at recruiters or a seniority
+      filter — the keyword match is a second screen, not a substitute for a good
+      search.</p>
     <div class="grid">
       <label>Daily invite cap <input type="number" id="dailyInviteCap" min="1" max="50"></label>
       <label>Weekly invite cap <input type="number" id="weeklyInviteCap" min="1" max="200"></label>

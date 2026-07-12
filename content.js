@@ -271,19 +271,28 @@ function closeComposer() {
 // Sending a connection request from a search / "People you may know" page
 // ---------------------------------------------------------------------------
 
-async function sendConnectionInvite({ note, skipIds = [] }) {
+async function sendConnectionInvite({ note, skipIds = [], filter = null }) {
   const skip = new Set(skipIds);
 
-  // Wait for at least one actionable Connect button to render.
-  const btn = await waitFor(() => pickConnectButton(skip), 12000);
-  if (!btn) {
-    return { none: true };
+  // Find the first actionable Connect button whose person matches the target
+  // filter, waiting a little in case results render late.
+  let pick = pickConnectButton(skip, filter);
+  if (!pick.button) {
+    await waitFor(() => {
+      pick = pickConnectButton(skip, filter);
+      return pick.button;
+    }, 12000);
   }
+  if (!pick.button) {
+    return { none: true, filteredOut: pick.filteredOut };
+  }
+  const btn = pick.button;
 
   const name = connectButtonName(btn);
   const firstName = (name || '').split(' ')[0] || 'there';
   const id = profileIdNear(btn);
-  if (id && skip.has(id)) return { none: true };
+  const headline = cardHeadline(cardOf(btn), name);
+  if (id && skip.has(id)) return { none: true, filteredOut: pick.filteredOut };
 
   btn.scrollIntoView({ block: 'center' });
   await sleep(500 + Math.random() * 800);
@@ -296,7 +305,7 @@ async function sendConnectionInvite({ note, skipIds = [] }) {
     2500
   );
   if (!dialog) {
-    return confirmInviteSent(btn, id, name);
+    return confirmInviteSent(btn, id, name, headline);
   }
 
   const wantNote = note && note.trim();
@@ -322,7 +331,7 @@ async function sendConnectionInvite({ note, skipIds = [] }) {
         const sendNote = findDialogButton(dialog, ['send invitation', 'send now', 'send']);
         if (sendNote) {
           sendNote.click();
-          return confirmInviteSent(btn, id, name);
+          return confirmInviteSent(btn, id, name, headline);
         }
       }
       // Note path failed (e.g. free-account note limit) — fall through and
@@ -335,7 +344,7 @@ async function sendConnectionInvite({ note, skipIds = [] }) {
   ]);
   if (sendPlain) {
     sendPlain.click();
-    return confirmInviteSent(btn, id, name);
+    return confirmInviteSent(btn, id, name, headline);
   }
 
   // Couldn't find a send control — bail cleanly.
@@ -343,9 +352,13 @@ async function sendConnectionInvite({ note, skipIds = [] }) {
   return { error: 'Connect dialog opened but no Send button was found.' };
 }
 
-// Pick the first visible Connect button not tied to an already-invited person.
-function pickConnectButton(skip) {
+// Pick the first visible Connect button whose person isn't already invited
+// and matches the target filter. Also reports how many candidates were
+// skipped purely because they didn't match, so the caller can explain a
+// "nobody to invite" result.
+function pickConnectButton(skip, filter) {
   const buttons = [...document.querySelectorAll('button')];
+  let filteredOut = 0;
   for (const b of buttons) {
     if (!visible(b)) continue;
     const label = (b.getAttribute('aria-label') || '').toLowerCase();
@@ -355,9 +368,57 @@ function pickConnectButton(skip) {
     if (b.disabled) continue;
     const id = profileIdNear(b);
     if (id && skip.has(id)) continue;
-    return b;
+    if (filter && filter.enabled && !matchesTarget(b, filter)) {
+      filteredOut++;
+      continue;
+    }
+    return { button: b, filteredOut };
   }
-  return null;
+  return { button: null, filteredOut };
+}
+
+// Decide whether a candidate's card matches the target roles/seniority.
+// Matches on the whole card's visible text so it's resilient to markup
+// changes (title, "Talent Acquisition at X", etc. all live in that text).
+function matchesTarget(btn, filter) {
+  const card = cardOf(btn);
+  const hay = ((card && card.innerText) || '').toLowerCase();
+  if (!hay) return false;
+  if (filter.excludes && filter.excludes.some((k) => hay.includes(k))) return false;
+  if (filter.targets && filter.targets.length) {
+    return filter.targets.some((k) => hay.includes(k));
+  }
+  return true;
+}
+
+function cardOf(btn) {
+  return (
+    btn.closest('li') ||
+    btn.closest('[data-view-name]') ||
+    btn.closest('div.entity-result') ||
+    btn.closest('div.discover-entity-type-card') ||
+    btn.parentElement
+  );
+}
+
+// Best-effort extraction of the person's headline/occupation for the log.
+function cardHeadline(card, name) {
+  if (!card) return '';
+  const sel = card.querySelector(
+    '.entity-result__primary-subtitle, .discover-person-card__occupation, ' +
+    '.artdeco-entity-lockup__subtitle, .mn-connection-card__occupation, ' +
+    '[class*="subtitle"], [class*="occupation"]'
+  );
+  if (sel && sel.textContent.trim()) return sel.textContent.trim();
+  const skip = ['connect', 'message', 'follow', 'pending', 'ignore'];
+  for (const line of card.innerText.split('\n').map((s) => s.trim()).filter(Boolean)) {
+    const low = line.toLowerCase();
+    if (name && line.includes(name)) continue;
+    if (skip.includes(low)) continue;
+    if (/mutual connection|followers?$|• \d/i.test(line)) continue;
+    return line;
+  }
+  return '';
 }
 
 function connectButtonName(btn) {
@@ -392,11 +453,11 @@ function findDialogButton(dialog, labelFragments) {
   return null;
 }
 
-async function confirmInviteSent(btn, id, name) {
+async function confirmInviteSent(btn, id, name, headline) {
   // Success shows a "Pending" state or a toast; either way give it a moment.
   await sleep(1200);
   dismissDialog(document.querySelector('div[role="dialog"]'));
-  return { sent: true, id, name };
+  return { sent: true, id, name, headline };
 }
 
 function dismissDialog(dialog) {

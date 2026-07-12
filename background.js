@@ -23,7 +23,24 @@ const DEFAULT_SETTINGS = {
   dailyInviteCap: 15,        // max connection requests per calendar day
   weeklyInviteCap: 80,       // stay under LinkedIn's ~100/week ceiling
   inviteGapMin: 8,           // minimum wait between two invites
-  inviteGapJitterMin: 12     // random extra wait added to the invite gap
+  inviteGapJitterMin: 12,    // random extra wait added to the invite gap
+
+  // Only invite people whose headline/title matches these targets — so we
+  // reach recruiters, senior people, and referral-capable roles rather than
+  // just anyone who shows up. Matching is case-insensitive substring.
+  inviteFilterEnabled: true,
+  inviteTargetKeywords: [
+    // recruiting / hiring
+    'recruiter', 'recruiting', 'talent acquisition', 'talent partner',
+    'talent sourcer', 'sourcer', 'hiring manager', 'staffing',
+    'people operations', 'human resources', 'hr business partner',
+    // seniority / decision makers
+    'senior', 'sr.', 'lead', 'principal', 'staff', 'manager', 'head of',
+    'director', 'vp', 'vice president', 'svp', 'evp', 'chief', 'ceo', 'cfo',
+    'coo', 'cto', 'managing director', 'partner', 'executive', 'founder',
+    'owner', 'associate', 'avp'
+  ].join(', '),
+  inviteExcludeKeywords: ['intern', 'student', 'seeking', 'unemployed'].join(', ')
 };
 
 // Templates support {a|b|c} variation groups — one option is picked at
@@ -343,6 +360,12 @@ async function processInvites(manual = false) {
     ? settings.inviteSearchUrl
     : 'https://www.linkedin.com/mynetwork/';
 
+  const filter = {
+    enabled: settings.inviteFilterEnabled !== false,
+    targets: splitKeywords(settings.inviteTargetKeywords),
+    excludes: splitKeywords(settings.inviteExcludeKeywords)
+  };
+
   const tab = await chrome.tabs.create({ url, active: false });
   let result;
   try {
@@ -351,7 +374,8 @@ async function processInvites(manual = false) {
     result = await sendToTab(tab.id, {
       type: 'sendInvite',
       note: settings.inviteNote, // raw template; content fills {firstName} per person
-      skipIds: Object.keys(invited)
+      skipIds: Object.keys(invited),
+      filter
     });
   } catch (e) {
     result = { error: String(e.message || e) };
@@ -371,14 +395,24 @@ async function processInvites(manual = false) {
       invited,
       nextInviteAllowedAt: now + gapMs
     });
-    await log(`Connection request sent${result.name ? ` to ${result.name}` : ''}` +
+    const who = result.name || 'someone';
+    const title = result.headline ? ` — ${result.headline}` : '';
+    await log(`Connection request sent to ${who}${title}` +
       ` (${daily.sent}/${settings.dailyInviteCap} today, ${weekly.sent}/${settings.weeklyInviteCap} this week).`);
   } else if (result && result.none) {
-    await log('No new people to invite on that page right now. ' +
-      (settings.inviteSearchUrl
-        ? 'Try a broader search URL, or scroll it once so more results load.'
-        : 'LinkedIn’s "People you may know" list may be exhausted — set a search URL in Settings for targeted invites.'));
-    // Back off a little so we don't reopen the empty page every minute.
+    const filtered = result.filteredOut || 0;
+    if (filtered > 0) {
+      await log(`No matching targets on that page — skipped ${filtered} ` +
+        'people who didn’t match your target roles/seniority. Point the ' +
+        'search URL at recruiters or senior titles, or loosen the target ' +
+        'keywords in the Connection requests section.');
+    } else {
+      await log('No new people to invite on that page right now. ' +
+        (settings.inviteSearchUrl
+          ? 'Try a broader search URL, or scroll it once so more results load.'
+          : 'LinkedIn’s "People you may know" list may be exhausted — set a search URL in Settings for targeted invites.'));
+    }
+    // Back off a little so we don't reopen the same page every minute.
     await setStore({ nextInviteAllowedAt: now + 30 * 60000 });
   } else {
     await log(`Invite attempt failed: ${(result && result.error) || 'unknown error'}. ` +
@@ -520,6 +554,14 @@ function fillTemplate(template, contact) {
     text = next;
   }
   return text;
+}
+
+function splitKeywords(value) {
+  if (Array.isArray(value)) return value.map((k) => String(k).trim().toLowerCase()).filter(Boolean);
+  return String(value || '')
+    .split(',')
+    .map((k) => k.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 function sleep(ms) {

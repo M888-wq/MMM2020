@@ -38,6 +38,9 @@ async function load() {
   $('dailyInviteCap').value = s.dailyInviteCap ?? 15;
   $('weeklyInviteCap').value = s.weeklyInviteCap ?? 80;
   $('inviteGapMin').value = s.inviteGapMin ?? 8;
+  $('inviteFilterEnabled').checked = s.inviteFilterEnabled !== false;
+  $('inviteTargetKeywords').value = asCsv(s.inviteTargetKeywords);
+  $('inviteExcludeKeywords').value = asCsv(s.inviteExcludeKeywords);
 
   const t = store.templates || {};
   $('tpl1').value = t.stage1 || '';
@@ -172,7 +175,10 @@ async function saveSettings() {
     inviteNote: $('inviteNote').value,
     dailyInviteCap: clamp($('dailyInviteCap').value, 1, 50, 15),
     weeklyInviteCap: clamp($('weeklyInviteCap').value, 1, 200, 80),
-    inviteGapMin: clamp($('inviteGapMin').value, 1, 240, 8)
+    inviteGapMin: clamp($('inviteGapMin').value, 1, 240, 8),
+    inviteFilterEnabled: $('inviteFilterEnabled').checked,
+    inviteTargetKeywords: $('inviteTargetKeywords').value,
+    inviteExcludeKeywords: $('inviteExcludeKeywords').value
   });
   delete settings.stage2DelayDays; // clear values from the old day-based schema
   delete settings.stage3DelayDays;
@@ -185,6 +191,13 @@ function clamp(v, min, max, dflt) {
   const n = Number(v);
   if (!Number.isFinite(n)) return dflt;
   return Math.min(max, Math.max(min, Math.round(n)));
+}
+
+// Settings may store keyword lists as an array (defaults) or a string (after
+// the user edits the field); show either as comma-separated text.
+function asCsv(value) {
+  if (Array.isArray(value)) return value.join(', ');
+  return value || '';
 }
 
 $('enabled').addEventListener('change', async () => {

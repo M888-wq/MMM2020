@@ -7,12 +7,15 @@ stays in local extension storage).
 
 ## What it does
 
-0. **Sends connection requests (optional).** Point it at a LinkedIn
-   people-search URL (or let it use your "People you may know" page) and it
-   sends connection requests on a paced schedule, respecting daily and weekly
-   caps. Off by default — enable it under **Connection requests** in the
-   popup. Invites can go out with no note (safer for volume) or with an
-   optional short note template.
+0. **Sends connection requests to high-value people (optional).** Point it at
+   a LinkedIn people-search URL (or let it use your "People you may know"
+   page) and it sends connection requests on a paced schedule, respecting
+   daily and weekly caps. A **target filter** reads each person's headline and
+   only invites those matching your chosen roles and seniority — recruiters,
+   senior titles, directors/VPs, associates, and other referral-capable roles
+   — skipping everyone else. Off by default; enable it under **Connection
+   requests** in the popup. Invites can go out with no note (safer for volume)
+   or with an optional short note template.
 1. **Watches your connections list.** On a schedule (default: every 30
    minutes) it opens your connections page in a background tab, reads the
    most recent connections, and closes the tab. If you already have the
@@ -60,6 +63,15 @@ Every message, delay, and threshold is editable from the popup.
   daily and weekly cap, optionally add a note, and turn it on. Use **Invite
   now** to fire one immediately and watch it work. Already-invited people are
   remembered and skipped.
+- **Targeting.** Keep "Only invite high-value people" on and edit the target
+  keyword list to fit who you want (recruiters, senior/leadership titles,
+  associates, specific functions). The extension reads each candidate's
+  headline and only invites matches; the activity log records who was invited
+  *and their title* so you can see the quality. The keyword match is a second
+  screen — the biggest lever is still pointing the search URL at the right
+  people. Good starting searches: filter LinkedIn People search by title
+  ("recruiter", "talent acquisition") plus your industry, or by a target
+  company's employees, then copy that URL into the field.
 - **Safety pacing**: separate daily caps for messages (default 5) and invites
   (default 15/day, 80/week), randomized gaps between actions, and scheduled
   runs keep volume low.

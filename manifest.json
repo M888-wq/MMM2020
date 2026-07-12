@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Networker",
-  "version": "0.2.0",
-  "description": "Sends LinkedIn connection requests, then friendly staged messages to new connections that build toward a referral ask.",
+  "version": "0.3.0",
+  "description": "Targets high-value LinkedIn people (recruiters, senior roles), sends connection requests, then friendly staged messages that build toward a referral ask.",
   "permissions": ["storage", "alarms", "tabs"],
   "host_permissions": ["https://www.linkedin.com/*"],
   "background": {
