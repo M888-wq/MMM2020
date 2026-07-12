@@ -21,6 +21,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       .catch((e) => sendResponse({ error: String(e.message || e) }));
     return true;
   }
+  if (msg.type === 'sendInvite') {
+    sendConnectionInvite(msg)
+      .then(sendResponse)
+      .catch((e) => sendResponse({ error: String(e.message || e) }));
+    return true;
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -259,6 +265,156 @@ function closeComposer() {
     'button[data-test-icon="close-small"], button[aria-label^="Close"]'
   );
   if (close) close.click();
+}
+
+// ---------------------------------------------------------------------------
+// Sending a connection request from a search / "People you may know" page
+// ---------------------------------------------------------------------------
+
+async function sendConnectionInvite({ note, skipIds = [] }) {
+  const skip = new Set(skipIds);
+
+  // Wait for at least one actionable Connect button to render.
+  const btn = await waitFor(() => pickConnectButton(skip), 12000);
+  if (!btn) {
+    return { none: true };
+  }
+
+  const name = connectButtonName(btn);
+  const firstName = (name || '').split(' ')[0] || 'there';
+  const id = profileIdNear(btn);
+  if (id && skip.has(id)) return { none: true };
+
+  btn.scrollIntoView({ block: 'center' });
+  await sleep(500 + Math.random() * 800);
+  btn.click();
+
+  // A confirmation dialog usually appears. If it doesn't within ~2.5s, the
+  // invite was sent directly.
+  const dialog = await waitFor(
+    () => document.querySelector('div[role="dialog"]'),
+    2500
+  );
+  if (!dialog) {
+    return confirmInviteSent(btn, id, name);
+  }
+
+  const wantNote = note && note.trim();
+  if (wantNote) {
+    const addNoteBtn = findDialogButton(dialog, ['add a note']);
+    if (addNoteBtn) {
+      addNoteBtn.click();
+      const textarea = await waitFor(
+        () => dialog.querySelector('textarea'),
+        4000
+      );
+      if (textarea) {
+        const text = note
+          .replaceAll('{firstName}', firstName)
+          .replaceAll('{fullName}', name || '')
+          .replace(/\{([^{}]*\|[^{}]*)\}/g, (_, g) => {
+            const o = g.split('|');
+            return o[Math.floor(Math.random() * o.length)];
+          });
+        textarea.focus();
+        setNativeValue(textarea, text);
+        await sleep(400 + Math.random() * 600);
+        const sendNote = findDialogButton(dialog, ['send invitation', 'send now', 'send']);
+        if (sendNote) {
+          sendNote.click();
+          return confirmInviteSent(btn, id, name);
+        }
+      }
+      // Note path failed (e.g. free-account note limit) — fall through and
+      // send without a note instead of leaving the dialog stuck.
+    }
+  }
+
+  const sendPlain = findDialogButton(dialog, [
+    'send without a note', 'send without note', 'send invitation', 'send now', 'send'
+  ]);
+  if (sendPlain) {
+    sendPlain.click();
+    return confirmInviteSent(btn, id, name);
+  }
+
+  // Couldn't find a send control — bail cleanly.
+  dismissDialog(dialog);
+  return { error: 'Connect dialog opened but no Send button was found.' };
+}
+
+// Pick the first visible Connect button not tied to an already-invited person.
+function pickConnectButton(skip) {
+  const buttons = [...document.querySelectorAll('button')];
+  for (const b of buttons) {
+    if (!visible(b)) continue;
+    const label = (b.getAttribute('aria-label') || '').toLowerCase();
+    const text = (b.textContent || '').trim().toLowerCase();
+    const isConnect = /to connect$/.test(label) || text === 'connect';
+    if (!isConnect) continue;
+    if (b.disabled) continue;
+    const id = profileIdNear(b);
+    if (id && skip.has(id)) continue;
+    return b;
+  }
+  return null;
+}
+
+function connectButtonName(btn) {
+  const label = btn.getAttribute('aria-label') || '';
+  const m = label.match(/^Invite (.+?) to connect$/i);
+  if (m) return m[1].trim();
+  const id = profileIdNear(btn);
+  return id ? id.replace(/-/g, ' ') : '';
+}
+
+function profileIdNear(btn) {
+  const card =
+    btn.closest('li') ||
+    btn.closest('[data-view-name]') ||
+    btn.closest('div.entity-result') ||
+    btn.parentElement;
+  const scope = card || document;
+  const a = scope.querySelector && scope.querySelector('a[href*="/in/"]');
+  return profileIdFromHref(a && a.href);
+}
+
+function findDialogButton(dialog, labelFragments) {
+  const buttons = [...dialog.querySelectorAll('button')];
+  for (const frag of labelFragments) {
+    for (const b of buttons) {
+      if (!visible(b)) continue;
+      const label = (b.getAttribute('aria-label') || '').toLowerCase();
+      const text = (b.textContent || '').trim().toLowerCase();
+      if (label.includes(frag) || text === frag || text.includes(frag)) return b;
+    }
+  }
+  return null;
+}
+
+async function confirmInviteSent(btn, id, name) {
+  // Success shows a "Pending" state or a toast; either way give it a moment.
+  await sleep(1200);
+  dismissDialog(document.querySelector('div[role="dialog"]'));
+  return { sent: true, id, name };
+}
+
+function dismissDialog(dialog) {
+  if (!dialog) return;
+  const close = dialog.querySelector(
+    'button[aria-label^="Dismiss"], button[aria-label^="Close"]'
+  );
+  if (close) close.click();
+}
+
+// React-controlled inputs need their value set through the native setter and
+// an input event, or the framework ignores the change.
+function setNativeValue(el, value) {
+  const proto = Object.getPrototypeOf(el);
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value');
+  if (setter && setter.set) setter.set.call(el, value);
+  else el.value = value;
+  el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 // ---------------------------------------------------------------------------

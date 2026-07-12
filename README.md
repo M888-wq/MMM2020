@@ -7,6 +7,12 @@ stays in local extension storage).
 
 ## What it does
 
+0. **Sends connection requests (optional).** Point it at a LinkedIn
+   people-search URL (or let it use your "People you may know" page) and it
+   sends connection requests on a paced schedule, respecting daily and weekly
+   caps. Off by default — enable it under **Connection requests** in the
+   popup. Invites can go out with no note (safer for volume) or with an
+   optional short note template.
 1. **Watches your connections list.** On a schedule (default: every 30
    minutes) it opens your connections page in a background tab, reads the
    most recent connections, and closes the tab. If you already have the
@@ -49,8 +55,14 @@ Every message, delay, and threshold is editable from the popup.
   the tab open for you to read and hit Send yourself. Click **"I sent it"**
   in the popup afterwards to advance the contact's stage. Recommended for
   stage 3 — a referral ask is worth 20 seconds of your attention.
-- **Safety pacing**: a daily cap (default 5), a randomized gap between
-  messages (default 20–35 min), and scheduled scans keep volume low.
+- **Connection requests** live in their own popup section. Paste a people
+  search URL from LinkedIn (search for people, copy the address bar), set a
+  daily and weekly cap, optionally add a note, and turn it on. Use **Invite
+  now** to fire one immediately and watch it work. Already-invited people are
+  remembered and skipped.
+- **Safety pacing**: separate daily caps for messages (default 5) and invites
+  (default 15/day, 80/week), randomized gaps between actions, and scheduled
+  runs keep volume low.
 - **Humanized sending**: messages are typed into the composer character by
   character with jittered delays and occasional pauses (instead of being
   pasted instantly), there's a short "re-read" pause before Send is clicked,
@@ -61,9 +73,12 @@ Every message, delay, and threshold is editable from the popup.
 
 - **LinkedIn's Terms of Service prohibit automation.** Heavy or bot-like
   activity can get an account restricted or banned. This tool is built for
-  low-volume personal networking — the default cap is 5 messages/day, and
-  keeping it at or below that is strongly recommended. Keep the templates
-  human and prefer review mode when in doubt. Use at your own risk.
+  low-volume personal networking — the default caps are 5 messages/day and
+  15 invites/day (80/week), and keeping them at or below that is strongly
+  recommended. **Connection requests are the higher-risk action** — LinkedIn
+  enforces a weekly invite ceiling (~100) and watches for rapid, repetitive
+  inviting, so start small. Keep the templates human and prefer review mode
+  when in doubt. Use at your own risk.
 - **The DOM changes.** LinkedIn updates its markup regularly. The scraper and
   composer logic in `content.js` use several fallback strategies, but if
   scans start reporting "no connections found" or sends fail, the selectors

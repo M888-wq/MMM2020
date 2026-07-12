@@ -5,8 +5,11 @@ header { display: flex; align-items: center; justify-content: space-between; mar
 h1 { font-size: 16px; margin: 0; color: #0a66c2; }
 h2 { font-size: 13px; margin: 10px 0 6px; }
 
-#statusRow { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid #e6e6e6; }
+#statusRow { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
 #statusRow button { margin-left: auto; }
+#statusRow2 { display: flex; align-items: center; gap: 12px; padding: 0 0 6px; border-bottom: 1px solid #e6e6e6; }
+#statusRow2 button { margin-left: auto; }
+input[type="text"] { width: 100%; font-size: 12px; padding: 6px; border: 1px solid #ccc; border-radius: 6px; }
 
 button {
   background: #0a66c2; color: #fff; border: none; border-radius: 14px;

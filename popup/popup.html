@@ -18,6 +18,11 @@
     <span id="pipelineCount">In pipeline: –</span>
     <button id="scanNow">Scan now</button>
   </div>
+  <div id="statusRow2">
+    <span id="invitesToday">Invites today: –</span>
+    <span id="invitesWeek">This week: –</span>
+    <button id="inviteNow" class="ghost">Invite now</button>
+  </div>
 
   <div id="baselineNote" class="note hidden">
     First scan records your existing connections as a baseline — only
@@ -41,6 +46,26 @@
     <label>Stage 3 — referral ask (sent after <span id="d3">48</span> more hours)</label>
     <textarea id="tpl3" rows="5"></textarea>
     <button id="saveTemplates">Save templates</button>
+  </details>
+
+  <details>
+    <summary>Connection requests</summary>
+    <label class="row"><input type="checkbox" id="invitesEnabled">
+      Send connection requests automatically</label>
+    <label>People to invite — paste a LinkedIn people-search URL
+      (blank = your “People you may know”)</label>
+    <input type="text" id="inviteSearchUrl" placeholder="https://www.linkedin.com/search/results/people/?keywords=...">
+    <label>Optional note (blank = send with no note — recommended for volume;
+      LinkedIn limits personalized-note invites on free accounts)</label>
+    <textarea id="inviteNote" rows="2" placeholder="Hi {firstName}, I’d love to connect and follow your work!"></textarea>
+    <div class="grid">
+      <label>Daily invite cap <input type="number" id="dailyInviteCap" min="1" max="50"></label>
+      <label>Weekly invite cap <input type="number" id="weeklyInviteCap" min="1" max="200"></label>
+      <label>Gap between invites (min) <input type="number" id="inviteGapMin" min="1" max="240"></label>
+    </div>
+    <p class="note">LinkedIn caps invitations at roughly 100/week and flags
+      rapid, repetitive inviting. Keep these low.</p>
+    <button id="saveInvites">Save</button>
   </details>
 
   <details>

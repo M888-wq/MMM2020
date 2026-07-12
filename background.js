@@ -14,7 +14,16 @@ const DEFAULT_SETTINGS = {
   gapJitterMin: 15,      // random extra wait added to the gap
   followUpsEnabled: true,
   stage2DelayHours: 24,  // hours after stage 1 before the rapport message
-  stage3DelayHours: 48   // hours after stage 2 before the referral ask
+  stage3DelayHours: 48,  // hours after stage 2 before the referral ask
+
+  // --- Outbound connection requests ---
+  invitesEnabled: false,     // send connection requests, not just messages
+  inviteSearchUrl: '',       // a LinkedIn people-search URL; blank = "People you may know"
+  inviteNote: '',            // optional note template; blank = send with no note (safer for volume)
+  dailyInviteCap: 15,        // max connection requests per calendar day
+  weeklyInviteCap: 80,       // stay under LinkedIn's ~100/week ceiling
+  inviteGapMin: 8,           // minimum wait between two invites
+  inviteGapJitterMin: 12     // random extra wait added to the invite gap
 };
 
 // Templates support {a|b|c} variation groups — one option is picked at
@@ -104,17 +113,20 @@ async function resetAlarms() {
   const settings = await getSettings();
   await chrome.alarms.clear('scan');
   await chrome.alarms.clear('queue');
+  await chrome.alarms.clear('invite');
   chrome.alarms.create('scan', {
     periodInMinutes: Math.max(5, settings.checkIntervalMin),
     delayInMinutes: 1
   });
   chrome.alarms.create('queue', { periodInMinutes: 1 });
+  chrome.alarms.create('invite', { periodInMinutes: 1 });
 }
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   try {
     if (alarm.name === 'scan') await runScan(false);
     if (alarm.name === 'queue') await processQueue();
+    if (alarm.name === 'invite') await processInvites();
   } catch (e) {
     await log(`Error in ${alarm.name}: ${e.message || e}`);
   }
@@ -146,6 +158,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           break;
         case 'advanceStage':
           await advanceStageManually(msg.id);
+          sendResponse({ ok: true });
+          break;
+        case 'inviteNow':
+          await processInvites(true);
           sendResponse({ ok: true });
           break;
         case 'settingsChanged':
@@ -275,6 +291,100 @@ async function processQueue() {
 
   await setStore({ counters });
   await sendToContact(due[0].id, { force: false });
+}
+
+// ---------------------------------------------------------------------------
+// Outbound connection requests
+// ---------------------------------------------------------------------------
+
+function isoWeekKey(d = new Date()) {
+  // Year + ISO week number, so the weekly counter rolls over each Monday.
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
+  return `${date.getUTCFullYear()}-W${week}`;
+}
+
+async function processInvites(manual = false) {
+  const settings = await getSettings();
+  if (!settings.invitesEnabled && !manual) return;
+  if (!settings.invitesEnabled && manual) {
+    await log('Turn on "Send connection requests" in Settings first.');
+    return;
+  }
+
+  const now = Date.now();
+  const store = await getStore([
+    'inviteCounters', 'inviteWeek', 'nextInviteAllowedAt', 'invited'
+  ]);
+
+  const today = new Date().toDateString();
+  let daily = store.inviteCounters || { date: today, sent: 0 };
+  if (daily.date !== today) daily = { date: today, sent: 0 };
+
+  const wk = isoWeekKey();
+  let weekly = store.inviteWeek || { week: wk, sent: 0 };
+  if (weekly.week !== wk) weekly = { week: wk, sent: 0 };
+
+  if (daily.sent >= settings.dailyInviteCap) {
+    if (manual) await log(`Daily invite cap reached (${settings.dailyInviteCap}).`);
+    return;
+  }
+  if (weekly.sent >= settings.weeklyInviteCap) {
+    if (manual) await log(`Weekly invite cap reached (${settings.weeklyInviteCap}).`);
+    return;
+  }
+  if (!manual && store.nextInviteAllowedAt && now < store.nextInviteAllowedAt) return;
+
+  const invited = store.invited || {};
+  const url = settings.inviteSearchUrl && /linkedin\.com/.test(settings.inviteSearchUrl)
+    ? settings.inviteSearchUrl
+    : 'https://www.linkedin.com/mynetwork/';
+
+  const tab = await chrome.tabs.create({ url, active: false });
+  let result;
+  try {
+    await waitForTabComplete(tab.id, 30000);
+    await sleep(4500); // let search/PYMK results render
+    result = await sendToTab(tab.id, {
+      type: 'sendInvite',
+      note: settings.inviteNote, // raw template; content fills {firstName} per person
+      skipIds: Object.keys(invited)
+    });
+  } catch (e) {
+    result = { error: String(e.message || e) };
+  } finally {
+    try { await chrome.tabs.remove(tab.id); } catch (_) {}
+  }
+
+  if (result && result.sent) {
+    if (result.id) invited[result.id] = now;
+    daily.sent += 1;
+    weekly.sent += 1;
+    const gapMs =
+      (settings.inviteGapMin + Math.random() * settings.inviteGapJitterMin) * 60000;
+    await setStore({
+      inviteCounters: daily,
+      inviteWeek: weekly,
+      invited,
+      nextInviteAllowedAt: now + gapMs
+    });
+    await log(`Connection request sent${result.name ? ` to ${result.name}` : ''}` +
+      ` (${daily.sent}/${settings.dailyInviteCap} today, ${weekly.sent}/${settings.weeklyInviteCap} this week).`);
+  } else if (result && result.none) {
+    await log('No new people to invite on that page right now. ' +
+      (settings.inviteSearchUrl
+        ? 'Try a broader search URL, or scroll it once so more results load.'
+        : 'LinkedIn’s "People you may know" list may be exhausted — set a search URL in Settings for targeted invites.'));
+    // Back off a little so we don't reopen the empty page every minute.
+    await setStore({ nextInviteAllowedAt: now + 30 * 60000 });
+  } else {
+    await log(`Invite attempt failed: ${(result && result.error) || 'unknown error'}. ` +
+      'Make sure you are logged in; the page layout may also have changed.');
+    await setStore({ nextInviteAllowedAt: now + 15 * 60000 });
+  }
 }
 
 async function sendToContact(id, { force }) {

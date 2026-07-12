@@ -15,9 +15,10 @@ const STATUS_LABELS = {
 const $ = (id) => document.getElementById(id);
 
 async function load() {
-  const store = await chrome.storage.local.get(
-    ['settings', 'templates', 'contacts', 'counters', 'activityLog', 'known']
-  );
+  const store = await chrome.storage.local.get([
+    'settings', 'templates', 'contacts', 'counters', 'activityLog', 'known',
+    'inviteCounters', 'inviteWeek'
+  ]);
   const s = store.settings || {};
 
   $('enabled').checked = !!s.enabled;
@@ -31,6 +32,13 @@ async function load() {
   $('d2').textContent = s.stage2DelayHours ?? 24;
   $('d3').textContent = s.stage3DelayHours ?? 48;
 
+  $('invitesEnabled').checked = !!s.invitesEnabled;
+  $('inviteSearchUrl').value = s.inviteSearchUrl || '';
+  $('inviteNote').value = s.inviteNote || '';
+  $('dailyInviteCap').value = s.dailyInviteCap ?? 15;
+  $('weeklyInviteCap').value = s.weeklyInviteCap ?? 80;
+  $('inviteGapMin').value = s.inviteGapMin ?? 8;
+
   const t = store.templates || {};
   $('tpl1').value = t.stage1 || '';
   $('tpl2').value = t.stage2 || '';
@@ -39,6 +47,12 @@ async function load() {
   const today = new Date().toDateString();
   const sent = store.counters && store.counters.date === today ? store.counters.sent : 0;
   $('sentToday').textContent = `Sent today: ${sent}/${s.dailyCap ?? 5}`;
+
+  const invToday = store.inviteCounters && store.inviteCounters.date === today
+    ? store.inviteCounters.sent : 0;
+  const invWeek = store.inviteWeek ? store.inviteWeek.sent : 0;
+  $('invitesToday').textContent = `Invites today: ${invToday}/${s.dailyInviteCap ?? 15}`;
+  $('invitesWeek').textContent = `This week: ${invWeek}/${s.weeklyInviteCap ?? 80}`;
 
   const contacts = Object.values(store.contacts || {})
     .sort((a, b) => b.detectedAt - a.detectedAt);
@@ -152,7 +166,13 @@ async function saveSettings() {
     checkIntervalMin: clamp($('checkIntervalMin').value, 5, 720, 30),
     minGapMin: clamp($('minGapMin').value, 1, 240, 20),
     stage2DelayHours: clamp($('stage2DelayHours').value, 1, 336, 24),
-    stage3DelayHours: clamp($('stage3DelayHours').value, 1, 336, 48)
+    stage3DelayHours: clamp($('stage3DelayHours').value, 1, 336, 48),
+    invitesEnabled: $('invitesEnabled').checked,
+    inviteSearchUrl: $('inviteSearchUrl').value.trim(),
+    inviteNote: $('inviteNote').value,
+    dailyInviteCap: clamp($('dailyInviteCap').value, 1, 50, 15),
+    weeklyInviteCap: clamp($('weeklyInviteCap').value, 1, 200, 80),
+    inviteGapMin: clamp($('inviteGapMin').value, 1, 240, 8)
   });
   delete settings.stage2DelayDays; // clear values from the old day-based schema
   delete settings.stage3DelayDays;
@@ -192,6 +212,20 @@ $('scanNow').addEventListener('click', async () => {
   await bg({ type: 'scanNow' });
   $('scanNow').disabled = false;
   $('scanNow').textContent = 'Scan now';
+  await load();
+});
+$('saveInvites').addEventListener('click', async () => {
+  await saveSettings();
+  $('saveInvites').textContent = 'Saved ✓';
+  setTimeout(() => ($('saveInvites').textContent = 'Save'), 1500);
+});
+$('inviteNow').addEventListener('click', async () => {
+  await saveSettings(); // persist the URL/note before firing
+  $('inviteNow').disabled = true;
+  $('inviteNow').textContent = 'Inviting…';
+  await bg({ type: 'inviteNow' });
+  $('inviteNow').disabled = false;
+  $('inviteNow').textContent = 'Invite now';
   await load();
 });
 

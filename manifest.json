@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Networker",
-  "version": "0.1.0",
-  "description": "Detects newly accepted LinkedIn connections and sends friendly, staged networking messages that build toward a referral ask.",
+  "version": "0.2.0",
+  "description": "Sends LinkedIn connection requests, then friendly staged messages to new connections that build toward a referral ask.",
   "permissions": ["storage", "alarms", "tabs"],
   "host_permissions": ["https://www.linkedin.com/*"],
   "background": {
