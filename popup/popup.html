@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>LinkedIn Networker</h1>
+    <label class="switch" title="Master switch">
+      <input type="checkbox" id="enabled">
+      <span class="slider"></span>
+    </label>
+  </header>
+
+  <div id="statusRow">
+    <span id="sentToday">Sent today: –</span>
+    <span id="pipelineCount">In pipeline: –</span>
+    <button id="scanNow">Scan now</button>
+  </div>
+
+  <div id="baselineNote" class="note hidden">
+    First scan records your existing connections as a baseline — only
+    connections accepted <em>after</em> that will be messaged.
+  </div>
+
+  <section>
+    <h2>Pipeline</h2>
+    <div id="contacts"></div>
+  </section>
+
+  <details>
+    <summary>Message templates</summary>
+    <p class="note">Placeholders: <code>{firstName}</code>, <code>{fullName}</code>, <code>{headline}</code></p>
+    <label>Stage 1 — friendly intro (sent when they accept)</label>
+    <textarea id="tpl1" rows="4"></textarea>
+    <label>Stage 2 — build rapport (sent after <span id="d2">3</span> days)</label>
+    <textarea id="tpl2" rows="4"></textarea>
+    <label>Stage 3 — referral ask (sent after <span id="d3">7</span> more days)</label>
+    <textarea id="tpl3" rows="5"></textarea>
+    <button id="saveTemplates">Save templates</button>
+  </details>
+
+  <details>
+    <summary>Settings</summary>
+    <label class="row"><input type="checkbox" id="reviewMode">
+      Review mode — draft each message but let me hit Send</label>
+    <label class="row"><input type="checkbox" id="followUpsEnabled">
+      Send stage 2 &amp; 3 follow-ups automatically</label>
+    <div class="grid">
+      <label>Daily message cap <input type="number" id="dailyCap" min="1" max="50"></label>
+      <label>Scan every (min) <input type="number" id="checkIntervalMin" min="5" max="720"></label>
+      <label>Gap between msgs (min) <input type="number" id="minGapMin" min="1" max="240"></label>
+      <label>Stage 2 delay (days) <input type="number" id="stage2DelayDays" min="1" max="60"></label>
+      <label>Stage 3 delay (days) <input type="number" id="stage3DelayDays" min="1" max="60"></label>
+    </div>
+    <button id="saveSettings">Save settings</button>
+  </details>
+
+  <details>
+    <summary>Activity log</summary>
+    <div id="log"></div>
+  </details>
+
+  <footer class="note">
+    Keep caps low and messages personal — automation on LinkedIn is against
+    their terms of service and heavy use can get an account restricted.
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
