@@ -36,9 +36,9 @@
       message, so no two people get identical text.</p>
     <label>Stage 1 — friendly intro (sent when they accept)</label>
     <textarea id="tpl1" rows="4"></textarea>
-    <label>Stage 2 — build rapport (sent after <span id="d2">3</span> days)</label>
+    <label>Stage 2 — build rapport (sent after <span id="d2">24</span> hours)</label>
     <textarea id="tpl2" rows="4"></textarea>
-    <label>Stage 3 — referral ask (sent after <span id="d3">7</span> more days)</label>
+    <label>Stage 3 — referral ask (sent after <span id="d3">48</span> more hours)</label>
     <textarea id="tpl3" rows="5"></textarea>
     <button id="saveTemplates">Save templates</button>
   </details>
@@ -53,8 +53,8 @@
       <label>Daily message cap <input type="number" id="dailyCap" min="1" max="50"></label>
       <label>Scan every (min) <input type="number" id="checkIntervalMin" min="5" max="720"></label>
       <label>Gap between msgs (min) <input type="number" id="minGapMin" min="1" max="240"></label>
-      <label>Stage 2 delay (days) <input type="number" id="stage2DelayDays" min="1" max="60"></label>
-      <label>Stage 3 delay (days) <input type="number" id="stage3DelayDays" min="1" max="60"></label>
+      <label>Stage 2 delay (hours) <input type="number" id="stage2DelayHours" min="1" max="336"></label>
+      <label>Stage 3 delay (hours) <input type="number" id="stage3DelayHours" min="1" max="336"></label>
     </div>
     <button id="saveSettings">Save settings</button>
   </details>

@@ -13,8 +13,8 @@ const DEFAULT_SETTINGS = {
   minGapMin: 20,         // minimum wait between two outgoing messages
   gapJitterMin: 15,      // random extra wait added to the gap
   followUpsEnabled: true,
-  stage2DelayDays: 3,    // days after stage 1 before the rapport message
-  stage3DelayDays: 7     // days after stage 2 before the referral ask
+  stage2DelayHours: 24,  // hours after stage 1 before the rapport message
+  stage3DelayHours: 48   // hours after stage 2 before the referral ask
 };
 
 // Templates support {a|b|c} variation groups — one option is picked at
@@ -27,8 +27,9 @@ const DEFAULT_TEMPLATES = {
     'to meet folks doing interesting work} — hope your week’s ' +
     '{going well|off to a good start}!',
   stage2:
-    '{Hi|Hey} {firstName}, hope you’ve been well! I’d love to hear ' +
-    '{a bit about|how you’re finding} your current role — I’m always curious ' +
+    '{Hi|Hey} again {firstName}! {Been meaning to ask|I was curious} — ' +
+    'I’d love to hear {a bit about|how you’re finding} your current role. ' +
+    'I’m always interested in ' +
     'how different teams {approach things|work day to day}. If you’re ever ' +
     'up for a quick chat, I’d {really enjoy that|love to hear your take}.',
   stage3:
@@ -54,7 +55,15 @@ async function setStore(obj) {
 
 async function getSettings() {
   const { settings } = await getStore('settings');
-  return { ...DEFAULT_SETTINGS, ...(settings || {}) };
+  const s = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+  // Migrate settings saved by older versions that used day-based delays.
+  if (settings && settings.stage2DelayDays && !settings.stage2DelayHours) {
+    s.stage2DelayHours = settings.stage2DelayDays * 24;
+  }
+  if (settings && settings.stage3DelayDays && !settings.stage3DelayHours) {
+    s.stage3DelayHours = settings.stage3DelayDays * 24;
+  }
+  return s;
 }
 
 async function getTemplates() {
@@ -313,10 +322,10 @@ async function sendToContact(id, { force }) {
     contact.retries = 0;
     if (stage === 1 && settings.followUpsEnabled) {
       contact.status = 'following';
-      contact.nextDueAt = now + settings.stage2DelayDays * 86400000;
+      contact.nextDueAt = now + settings.stage2DelayHours * 3600000;
     } else if (stage === 2 && settings.followUpsEnabled) {
       contact.status = 'following';
-      contact.nextDueAt = now + settings.stage3DelayDays * 86400000;
+      contact.nextDueAt = now + settings.stage3DelayHours * 3600000;
     } else {
       contact.status = 'done';
     }
@@ -375,8 +384,8 @@ async function advanceStageManually(id) {
     contact.status = 'done';
   } else {
     contact.status = 'following';
-    const delayDays = contact.stage === 1 ? settings.stage2DelayDays : settings.stage3DelayDays;
-    contact.nextDueAt = Date.now() + delayDays * 86400000;
+    const delayHours = contact.stage === 1 ? settings.stage2DelayHours : settings.stage3DelayHours;
+    contact.nextDueAt = Date.now() + delayHours * 3600000;
   }
   await setStore({ contacts });
   await updateBadge();

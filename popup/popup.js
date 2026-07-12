@@ -26,10 +26,10 @@ async function load() {
   $('dailyCap').value = s.dailyCap ?? 5;
   $('checkIntervalMin').value = s.checkIntervalMin ?? 30;
   $('minGapMin').value = s.minGapMin ?? 20;
-  $('stage2DelayDays').value = s.stage2DelayDays ?? 3;
-  $('stage3DelayDays').value = s.stage3DelayDays ?? 7;
-  $('d2').textContent = s.stage2DelayDays ?? 3;
-  $('d3').textContent = s.stage3DelayDays ?? 7;
+  $('stage2DelayHours').value = s.stage2DelayHours ?? 24;
+  $('stage3DelayHours').value = s.stage3DelayHours ?? 48;
+  $('d2').textContent = s.stage2DelayHours ?? 24;
+  $('d3').textContent = s.stage3DelayHours ?? 48;
 
   const t = store.templates || {};
   $('tpl1').value = t.stage1 || '';
@@ -151,9 +151,11 @@ async function saveSettings() {
     dailyCap: clamp($('dailyCap').value, 1, 50, 5),
     checkIntervalMin: clamp($('checkIntervalMin').value, 5, 720, 30),
     minGapMin: clamp($('minGapMin').value, 1, 240, 20),
-    stage2DelayDays: clamp($('stage2DelayDays').value, 1, 60, 3),
-    stage3DelayDays: clamp($('stage3DelayDays').value, 1, 60, 7)
+    stage2DelayHours: clamp($('stage2DelayHours').value, 1, 336, 24),
+    stage3DelayHours: clamp($('stage3DelayHours').value, 1, 336, 48)
   });
+  delete settings.stage2DelayDays; // clear values from the old day-based schema
+  delete settings.stage3DelayDays;
   await chrome.storage.local.set({ settings });
   await bg({ type: 'settingsChanged' });
   await load();

@@ -15,8 +15,8 @@ stays in local extension storage).
    messaged — only people who accept a request after you turn it on.
 3. **Sends a staged message sequence** to each new connection:
    - **Stage 1 — friendly intro**, sent shortly after they accept. No ask.
-   - **Stage 2 — build rapport**, sent ~3 days later.
-   - **Stage 3 — the referral ask**, sent ~7 days after that.
+   - **Stage 2 — build rapport**, sent 24 hours later (configurable in hours).
+   - **Stage 3 — the referral ask**, sent 48 hours after that (configurable).
 4. **Stops the moment they reply.** Before sending a follow-up it checks the
    conversation; if the person has written back, automation for that contact
    pauses and the popup flags them so *you* take over. A real conversation
