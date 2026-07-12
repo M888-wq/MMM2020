@@ -154,9 +154,10 @@ async function sendLinkedInMessage({ text, review, checkReply }) {
     return { replied: true };
   }
 
-  // 4. Insert the text.
+  // 4. Type the text with human-like rhythm; fall back to direct insertion.
   editor.focus();
-  const inserted = insertText(editor, text);
+  let inserted = await typeLikeHuman(editor, text);
+  if (!inserted) inserted = insertText(editor, text);
   if (!inserted) {
     return { error: 'Could not insert message text into the composer.' };
   }
@@ -174,6 +175,7 @@ async function sendLinkedInMessage({ text, review, checkReply }) {
   if (!sendBtn) {
     return { error: 'Send button never became enabled.' };
   }
+  await sleep(700 + Math.random() * 1200); // brief pause, like re-reading it
   sendBtn.click();
 
   const cleared = await waitFor(
@@ -209,6 +211,29 @@ function threadHasIncomingMessage() {
   // Incoming bubbles carry the --other modifier in the message overlay.
   if (document.querySelector('.msg-s-event-listitem--other')) return true;
   return false;
+}
+
+// Type character by character with jittered delays and occasional short
+// pauses, so the input pattern looks like a person rather than a paste.
+// Pace is scaled so even long messages finish within ~18 seconds.
+async function typeLikeHuman(editor, text) {
+  try {
+    document.execCommand('selectAll', false, null);
+    document.execCommand('delete', false, null);
+  } catch (_) { /* empty composer is fine */ }
+  const perCharMs = Math.min(110, Math.max(25, 18000 / Math.max(1, text.length)));
+  for (const ch of text) {
+    let ok;
+    try {
+      ok = document.execCommand('insertText', false, ch);
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok) return false;
+    await sleep(perCharMs * (0.5 + Math.random()));
+    if (Math.random() < 0.03) await sleep(250 + Math.random() * 450);
+  }
+  return editor.textContent.includes(text.slice(0, 20));
 }
 
 function insertText(editor, text) {

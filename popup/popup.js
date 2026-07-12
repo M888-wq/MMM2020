@@ -23,7 +23,7 @@ async function load() {
   $('enabled').checked = !!s.enabled;
   $('reviewMode').checked = !!s.reviewMode;
   $('followUpsEnabled').checked = s.followUpsEnabled !== false;
-  $('dailyCap').value = s.dailyCap ?? 10;
+  $('dailyCap').value = s.dailyCap ?? 5;
   $('checkIntervalMin').value = s.checkIntervalMin ?? 30;
   $('minGapMin').value = s.minGapMin ?? 20;
   $('stage2DelayDays').value = s.stage2DelayDays ?? 3;
@@ -38,7 +38,7 @@ async function load() {
 
   const today = new Date().toDateString();
   const sent = store.counters && store.counters.date === today ? store.counters.sent : 0;
-  $('sentToday').textContent = `Sent today: ${sent}/${s.dailyCap ?? 10}`;
+  $('sentToday').textContent = `Sent today: ${sent}/${s.dailyCap ?? 5}`;
 
   const contacts = Object.values(store.contacts || {})
     .sort((a, b) => b.detectedAt - a.detectedAt);
@@ -148,7 +148,7 @@ async function saveSettings() {
     enabled: $('enabled').checked,
     reviewMode: $('reviewMode').checked,
     followUpsEnabled: $('followUpsEnabled').checked,
-    dailyCap: clamp($('dailyCap').value, 1, 50, 10),
+    dailyCap: clamp($('dailyCap').value, 1, 50, 5),
     checkIntervalMin: clamp($('checkIntervalMin').value, 5, 720, 30),
     minGapMin: clamp($('minGapMin').value, 1, 240, 20),
     stage2DelayDays: clamp($('stage2DelayDays').value, 1, 60, 3),

@@ -8,7 +8,7 @@ const CONNECTIONS_URL =
 const DEFAULT_SETTINGS = {
   enabled: false,        // master switch — off until the user turns it on
   reviewMode: false,     // true = fill the composer but let the user hit Send
-  dailyCap: 10,          // max outgoing messages per calendar day
+  dailyCap: 5,           // max outgoing messages per calendar day
   checkIntervalMin: 30,  // how often to scan for new connections
   minGapMin: 20,         // minimum wait between two outgoing messages
   gapJitterMin: 15,      // random extra wait added to the gap
@@ -17,22 +17,27 @@ const DEFAULT_SETTINGS = {
   stage3DelayDays: 7     // days after stage 2 before the referral ask
 };
 
+// Templates support {a|b|c} variation groups — one option is picked at
+// random per message so no two contacts get the exact same text.
 const DEFAULT_TEMPLATES = {
   stage1:
-    'Hi {firstName}, thanks for connecting! I came across your profile and ' +
-    'really liked what you’re working on. Always glad to meet people in ' +
-    'the field — hope your week is going well!',
+    '{Hi|Hey} {firstName}, {thanks for connecting|great to connect}! I came ' +
+    'across your profile and {really liked|was genuinely interested in} what ' +
+    'you’re working on. {Always glad to meet people in the field|Always good ' +
+    'to meet folks doing interesting work} — hope your week’s ' +
+    '{going well|off to a good start}!',
   stage2:
-    'Hi {firstName}, hope you’ve been well! I’d love to hear a bit ' +
-    'about your experience in your current role — I’m always curious ' +
-    'how different teams approach things. If you’re ever open to a quick ' +
-    'chat, I’d really enjoy that.',
+    '{Hi|Hey} {firstName}, hope you’ve been well! I’d love to hear ' +
+    '{a bit about|how you’re finding} your current role — I’m always curious ' +
+    'how different teams {approach things|work day to day}. If you’re ever ' +
+    'up for a quick chat, I’d {really enjoy that|love to hear your take}.',
   stage3:
-    'Hi {firstName}, I’ll be upfront — I’m currently exploring ' +
-    'my next role, and your company genuinely caught my eye. If you think I ' +
-    'could be a fit, would you be open to referring me or pointing me to the ' +
-    'right person or opening? Happy to send over my resume and a short blurb ' +
-    'to make it easy. Either way, I’m glad we connected!'
+    'Hi {firstName}, I’ll be upfront — I’m {currently looking for my next ' +
+    'role|exploring my next opportunity}, and your company genuinely caught ' +
+    'my eye. If you think I could be a fit, would you be open to referring ' +
+    'me or pointing me toward the right person or opening? Happy to send ' +
+    'over my resume and a short blurb to make it easy. Either way, ' +
+    '{I’m glad we connected|great to be connected}!'
 };
 
 // ---------------------------------------------------------------------------
@@ -382,10 +387,20 @@ async function advanceStageManually(id) {
 // ---------------------------------------------------------------------------
 
 function fillTemplate(template, contact) {
-  return template
+  let text = template
     .replaceAll('{firstName}', contact.firstName || 'there')
     .replaceAll('{fullName}', contact.name || '')
     .replaceAll('{headline}', contact.headline || '');
+  // Resolve {a|b|c} variation groups with a random pick.
+  for (let i = 0; i < 50; i++) {
+    const next = text.replace(/\{([^{}]*\|[^{}]*)\}/, (_, group) => {
+      const options = group.split('|');
+      return options[Math.floor(Math.random() * options.length)];
+    });
+    if (next === text) break;
+    text = next;
+  }
+  return text;
 }
 
 function sleep(ms) {

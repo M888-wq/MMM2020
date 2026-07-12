@@ -41,22 +41,29 @@ Every message, delay, and threshold is editable from the popup.
   when the next message is due. Per-contact controls: *Send next now*,
   *Pause*, *Resume*, *Done*.
 - **Templates** support `{firstName}`, `{fullName}`, and `{headline}`
-  placeholders. Rewrite them in your own voice — defaults are just a
-  starting point, and personal messages convert far better.
+  placeholders, plus `{option A|option B}` variation groups — one option is
+  picked at random per message so no two contacts receive identical text.
+  Rewrite them in your own voice — defaults are just a starting point, and
+  personal messages convert far better.
 - **Review mode** (Settings) drafts each message in the composer and leaves
   the tab open for you to read and hit Send yourself. Click **"I sent it"**
   in the popup afterwards to advance the contact's stage. Recommended for
   stage 3 — a referral ask is worth 20 seconds of your attention.
-- **Safety pacing**: a daily cap (default 10), a randomized gap between
+- **Safety pacing**: a daily cap (default 5), a randomized gap between
   messages (default 20–35 min), and scheduled scans keep volume low.
+- **Humanized sending**: messages are typed into the composer character by
+  character with jittered delays and occasional pauses (instead of being
+  pasted instantly), there's a short "re-read" pause before Send is clicked,
+  and template variations keep the wording from being identical across
+  contacts.
 
 ## Important caveats
 
 - **LinkedIn's Terms of Service prohibit automation.** Heavy or bot-like
   activity can get an account restricted or banned. This tool is built for
-  low-volume personal networking — keep the daily cap small, keep the
-  templates human, and prefer review mode when in doubt. Use at your own
-  risk.
+  low-volume personal networking — the default cap is 5 messages/day, and
+  keeping it at or below that is strongly recommended. Keep the templates
+  human and prefer review mode when in doubt. Use at your own risk.
 - **The DOM changes.** LinkedIn updates its markup regularly. The scraper and
   composer logic in `content.js` use several fallback strategies, but if
   scans start reporting "no connections found" or sends fail, the selectors
