@@ -25,6 +25,10 @@ export class Player {
     this.sprinting = false;
     this.onGround = true;
     this.eyeHeight = EYE_STAND;
+    // Mouse-look works whenever lookEnabled is true, whether or not the
+    // browser actually granted pointer lock (some embedded/sandboxed
+    // viewers block it) — this keeps the game controllable either way.
+    this.lookEnabled = false;
 
     this.health = 100;
     this.armor = 0;
@@ -42,7 +46,7 @@ export class Player {
     window.addEventListener('keyup', e => this.keys.delete(e.code));
 
     document.addEventListener('mousemove', e => {
-      if (!this.locked) return;
+      if (!this.lookEnabled) return;
       const sens = 0.0022;
       this.yaw -= e.movementX * sens;
       this.pitch -= e.movementY * sens;
@@ -56,7 +60,16 @@ export class Player {
   }
 
   requestLock() {
-    this.dom.requestPointerLock();
+    this.lookEnabled = true;
+    // Pointer lock gives the "real" FPS feel (hidden, re-centering cursor);
+    // if a sandboxed embed refuses it, mouse-look still works via
+    // lookEnabled, just with a visible cursor.
+    const result = this.dom.requestPointerLock();
+    if (result && typeof result.catch === 'function') result.catch(() => {});
+  }
+
+  releaseLook() {
+    this.lookEnabled = false;
   }
 
   respawn(feetPos, team, facingYaw = 0) {

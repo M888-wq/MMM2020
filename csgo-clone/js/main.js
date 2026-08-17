@@ -45,7 +45,10 @@ document.getElementById('start-btn').addEventListener('click', () => {
   }
 });
 
-document.getElementById('pointer-lock-hint').addEventListener('click', () => player.requestLock());
+document.getElementById('pointer-lock-hint').addEventListener('click', () => {
+  hud.showLockHint(false);
+  player.requestLock();
+});
 
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === canvas;
@@ -59,6 +62,7 @@ function setBuyMenu(open) {
   hud.setBuyMenuVisible(buyMenuOpen, player.money);
   if (buyMenuOpen) {
     hud.refreshBuyAffordability(player.money);
+    player.releaseLook();
     document.exitPointerLock();
   } else if (started && round.phase !== 'END') {
     player.requestLock();
@@ -74,7 +78,7 @@ hud.onBuyClick((id, kind) => {
 let firing = false;
 let triggerPulled = false; // consumed once per click for semi-auto weapons
 canvas.addEventListener('mousedown', e => {
-  if (e.button === 0 && player.locked) { firing = true; triggerPulled = true; }
+  if (e.button === 0 && player.lookEnabled) { firing = true; triggerPulled = true; }
 });
 window.addEventListener('mouseup', e => { if (e.button === 0) firing = false; });
 
@@ -84,7 +88,13 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Digit2') weapons.switchTo(weapons.owned.smg ? 'smg' : 'pistol');
   if (e.code === 'Digit3') weapons.switchTo(weapons.owned.rifle ? 'rifle' : 'pistol');
   if (e.code === 'KeyB') setBuyMenu(!buyMenuOpen);
-  if (e.code === 'Escape') { buyMenuOpen = false; hud.setBuyMenuVisible(false); }
+  if (e.code === 'Escape') {
+    buyMenuOpen = false;
+    hud.setBuyMenuVisible(false);
+    player.releaseLook();
+    document.exitPointerLock();
+    if (started) hud.showLockHint(true);
+  }
 });
 
 const shootable = () => round.bots.filter(b => b.alive).map(b => b.mesh);
@@ -103,7 +113,7 @@ function fireOnce() {
 }
 
 function handleFiring() {
-  if (!player.alive || !player.locked || buyMenuOpen) return;
+  if (!player.alive || !player.lookEnabled || buyMenuOpen) return;
   if (!firing) return;
   if (weapons.def.auto) {
     fireOnce();
@@ -140,6 +150,7 @@ function animate() {
 
 function showMatchOver() {
   started = false;
+  player.releaseLook();
   document.exitPointerLock();
   const winner = round.scoreCT > round.scoreT ? 'Counter-Terrorists' : 'Terrorists';
   document.querySelector('.menu-panel h1').textContent = 'MATCH OVER';

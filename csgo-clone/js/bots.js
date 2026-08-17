@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 
 const SPEED = 3.4;
-const RADIUS = 0.4;
+const BOT_RADIUS = 0.4;
 const HEIGHT = 1.8;
 const EYE = 1.55;
 const DETECT_RANGE = 34;
 const FOV = Math.PI * 0.75; // wide-ish so bots aren't trivially flanked
 const FIRE_RANGE = 40;
-const DEFUSE_TIME = 6;
+const BOT_DEFUSE_TIME = 6;
 const PLANT_TIME = 3.5;
 
 const ctMat = new THREE.MeshStandardMaterial({ color: 0x4a78c9, roughness: 0.6 });
@@ -30,7 +30,7 @@ export class Bot {
     this.holdTimer = Math.random() * 2;
 
     this.mesh = new THREE.Group();
-    const bodyGeo = new THREE.CapsuleGeometry(RADIUS, HEIGHT - RADIUS * 2, 4, 8);
+    const bodyGeo = new THREE.CapsuleGeometry(BOT_RADIUS, HEIGHT - BOT_RADIUS * 2, 4, 8);
     const body = new THREE.Mesh(bodyGeo, team === 'CT' ? ctMat : tMat);
     body.position.y = HEIGHT / 2;
     this.mesh.add(body);
@@ -105,8 +105,8 @@ export class Bot {
     const nz = pos.z + to.z * step;
 
     const collides = (x, z) => {
-      const min = new THREE.Vector3(x - RADIUS, 0.05, z - RADIUS);
-      const max = new THREE.Vector3(x + RADIUS, HEIGHT, z + RADIUS);
+      const min = new THREE.Vector3(x - BOT_RADIUS, 0.05, z - BOT_RADIUS);
+      const max = new THREE.Vector3(x + BOT_RADIUS, HEIGHT, z + BOT_RADIUS);
       for (const c of colliders) {
         if (min.x < c.max.x && max.x > c.min.x &&
             min.y < c.max.y && max.y > c.min.y &&
@@ -177,8 +177,8 @@ export class Bot {
         if (reached) {
           this.state = 'DEFUSE';
           this.defuseProgress += dt;
-          ctx.onDefuseProgress(this, this.defuseProgress / DEFUSE_TIME);
-          if (this.defuseProgress >= DEFUSE_TIME) ctx.onDefuseComplete();
+          ctx.onDefuseProgress(this, this.defuseProgress / BOT_DEFUSE_TIME);
+          if (this.defuseProgress >= BOT_DEFUSE_TIME) ctx.onDefuseComplete();
         }
         return;
       } else {
