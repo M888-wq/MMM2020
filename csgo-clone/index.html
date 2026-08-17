@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Strike Tactics — a CS:GO-style browser FPS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- Crosshair -->
+  <div id="crosshair">
+    <div class="ch-line ch-top"></div>
+    <div class="ch-line ch-bottom"></div>
+    <div class="ch-line ch-left"></div>
+    <div class="ch-line ch-right"></div>
+    <div class="ch-dot"></div>
+  </div>
+
+  <div id="hit-marker"></div>
+  <div id="damage-vignette"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="top-bar">
+      <div id="score-ct">CT 0</div>
+      <div id="round-timer">1:55</div>
+      <div id="score-t">T 0</div>
+    </div>
+    <div id="round-banner"></div>
+    <div id="kill-feed"></div>
+
+    <div id="bottom-bar">
+      <div id="health-block">
+        <span class="icon">&#10084;</span><span id="health-val">100</span>
+        <span class="armor"><span class="icon">&#128737;</span><span id="armor-val">0</span></span>
+      </div>
+      <div id="ammo-block">
+        <span id="ammo-mag">30</span> / <span id="ammo-reserve">90</span>
+        <div id="weapon-name">Rifle</div>
+      </div>
+      <div id="money-block">$<span id="money-val">800</span></div>
+    </div>
+    <div id="bomb-status"></div>
+  </div>
+
+  <!-- Buy menu -->
+  <div id="buy-menu" class="hidden">
+    <h2>Buy Menu <span class="hint">(B to toggle, click or 1-6)</span></h2>
+    <div class="buy-grid" id="buy-grid"></div>
+    <div class="buy-footer">Money: $<span id="buy-money">800</span></div>
+  </div>
+
+  <!-- Start / pause / end overlays -->
+  <div id="menu-overlay">
+    <div class="menu-panel">
+      <h1>STRIKE TACTICS</h1>
+      <p class="tagline">A browser-based tactical shooter, CS:GO-inspired.</p>
+      <ul class="rules">
+        <li>First to 4 round wins takes the match. You play Counter-Terrorist.</li>
+        <li>Terrorist bots plant the bomb at Site A or Site B and defend it.</li>
+        <li>Eliminate them before the plant, or defuse the bomb before it detonates.</li>
+        <li>Earn money from kills and round outcomes — spend it in the buy menu.</li>
+      </ul>
+      <div class="controls">
+        <b>Controls</b><br/>
+        WASD move &middot; Mouse look &middot; Shift sprint &middot; Ctrl crouch &middot; Space jump<br/>
+        Left click fire &middot; R reload &middot; 1/2/3 switch weapon &middot; B buy menu<br/>
+        E hold to defuse the bomb when it's planted &middot; Esc release mouse
+      </div>
+      <button id="start-btn">Click to Play</button>
+    </div>
+  </div>
+
+  <div id="pointer-lock-hint" class="hidden">Click to resume</div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./js/vendor/three.module.js"
+      }
+    }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

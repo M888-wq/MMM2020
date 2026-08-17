@@ -1,0 +1,136 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  user-select: none;
+}
+
+#game { display: block; width: 100%; height: 100%; }
+
+#crosshair {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 40px; height: 40px; pointer-events: none; z-index: 20;
+}
+.ch-line { position: absolute; background: #e8f5e9; box-shadow: 0 0 2px #000; }
+.ch-top, .ch-bottom { left: 50%; width: 2px; height: 8px; margin-left: -1px; }
+.ch-top { top: 0; }
+.ch-bottom { bottom: 0; }
+.ch-left, .ch-right { top: 50%; height: 2px; width: 8px; margin-top: -1px; }
+.ch-left { left: 0; }
+.ch-right { right: 0; }
+.ch-dot { position: absolute; top: 50%; left: 50%; width: 2px; height: 2px; margin: -1px; background: #e8f5e9; border-radius: 50%; }
+
+#hit-marker {
+  position: fixed; top: 50%; left: 50%; width: 24px; height: 24px;
+  transform: translate(-50%, -50%); pointer-events: none; z-index: 21;
+  opacity: 0; transition: opacity 0.15s ease-out;
+}
+#hit-marker.show {
+  opacity: 1;
+  background:
+    linear-gradient(45deg, transparent 45%, #ff3b3b 45%, #ff3b3b 55%, transparent 55%),
+    linear-gradient(-45deg, transparent 45%, #ff3b3b 45%, #ff3b3b 55%, transparent 55%);
+}
+
+#damage-vignette {
+  position: fixed; inset: 0; pointer-events: none; z-index: 15;
+  box-shadow: inset 0 0 0 0 rgba(255,0,0,0);
+  transition: box-shadow 0.4s ease-out;
+}
+#damage-vignette.hit { box-shadow: inset 0 0 160px 40px rgba(200,0,0,0.55); transition: none; }
+
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; color: #eee; }
+
+#top-bar {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 18px; align-items: center;
+  background: rgba(10,12,16,0.55); padding: 6px 18px; border-radius: 6px;
+  font-weight: bold; font-size: 20px; letter-spacing: 1px;
+}
+#score-ct { color: #6fb7ff; }
+#score-t { color: #ffcf5c; }
+#round-timer { min-width: 60px; text-align: center; font-variant-numeric: tabular-nums; }
+
+#round-banner {
+  position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+  font-size: 26px; font-weight: bold; text-shadow: 0 2px 6px #000;
+  opacity: 0; transition: opacity 0.3s;
+}
+#round-banner.show { opacity: 1; }
+
+#kill-feed {
+  position: absolute; top: 60px; right: 16px; width: 300px;
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-end;
+}
+.kill-entry {
+  background: rgba(10,12,16,0.6); padding: 4px 10px; border-radius: 4px;
+  font-size: 14px; animation: fadeOut 5s forwards;
+}
+@keyframes fadeOut { 0%,80% { opacity:1; } 100% { opacity:0; } }
+
+#bottom-bar {
+  position: absolute; bottom: 20px; left: 0; right: 0;
+  display: flex; justify-content: space-between; align-items: flex-end;
+  padding: 0 40px;
+  font-size: 26px; font-weight: bold;
+}
+#health-block .icon, #ammo-block, #money-block { text-shadow: 0 2px 4px #000; }
+#health-block .icon { color: #ff4d4d; margin-right: 4px; }
+.armor { margin-left: 16px; }
+.armor .icon { color: #6fb7ff; margin-right: 4px; }
+#ammo-block { text-align: right; }
+#weapon-name { font-size: 14px; font-weight: normal; color: #bbb; text-transform: uppercase; letter-spacing: 1px; }
+#money-block { color: #7CFC00; }
+
+#bomb-status {
+  position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);
+  font-size: 15px; color: #ffcf5c; text-shadow: 0 2px 4px #000; font-weight: bold;
+}
+
+#buy-menu {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  background: rgba(15,17,22,0.92); border: 1px solid #333; border-radius: 8px;
+  padding: 24px 28px; z-index: 30; width: 560px; color: #eee;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+#buy-menu.hidden { display: none; }
+#buy-menu h2 { margin-bottom: 14px; font-size: 20px; }
+#buy-menu .hint { font-size: 12px; color: #999; font-weight: normal; }
+.buy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.buy-item {
+  background: #1d2027; border: 1px solid #333; border-radius: 6px; padding: 10px;
+  cursor: pointer; pointer-events: auto; transition: background 0.15s;
+}
+.buy-item:hover { background: #2a2e38; }
+.buy-item.disabled { opacity: 0.4; cursor: not-allowed; }
+.buy-item .name { font-weight: bold; font-size: 14px; }
+.buy-item .price { color: #7CFC00; font-size: 13px; margin-top: 4px; }
+.buy-item .key { float: right; color: #888; font-size: 12px; }
+.buy-footer { margin-top: 14px; font-size: 15px; color: #7CFC00; font-weight: bold; }
+
+#menu-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: radial-gradient(ellipse at center, #1c2230 0%, #05070a 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+#menu-overlay.hidden { display: none; }
+.menu-panel { max-width: 560px; text-align: center; color: #eee; padding: 20px; }
+.menu-panel h1 { font-size: 44px; letter-spacing: 4px; color: #ffcf5c; text-shadow: 0 4px 12px rgba(0,0,0,0.6); }
+.menu-panel .tagline { color: #9fb0c3; margin: 8px 0 20px; }
+.menu-panel .rules { text-align: left; margin: 0 auto 20px; max-width: 440px; color: #cfd8e3; line-height: 1.5; font-size: 14px; }
+.menu-panel .controls { font-size: 13px; color: #9fb0c3; line-height: 1.8; margin-bottom: 22px; }
+#start-btn {
+  background: #ffcf5c; color: #1a1a1a; border: none; padding: 12px 32px;
+  font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer;
+  letter-spacing: 1px;
+}
+#start-btn:hover { background: #ffd97a; }
+
+#pointer-lock-hint {
+  position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.5); color: #fff; font-size: 24px; cursor: pointer;
+}
+#pointer-lock-hint.hidden { display: none; }
